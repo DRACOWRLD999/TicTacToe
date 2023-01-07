@@ -1,0 +1,189 @@
+package tic;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class TicTacToeFrame extends JFrame {
+
+
+	private static final int ROWS = 3;
+	private static final int COLS = 3;
+	private static final int CELL_SIZE = 200;
+	private static final int CANVAS_WIDTH = CELL_SIZE * COLS;
+	private static final int CANVAS_HEIGHT = CELL_SIZE * ROWS;
+	private static final int GRID_WIDTH = 2;
+	private static final int GRID_WIDTH_HALF = GRID_WIDTH / 2;
+	// content of cells
+	private static final int EMPTY = 0;
+	private static final int CROSS = 1;
+	private static final int circle = 2;
+	//variables for the game state
+	private int[][] cells = new int[ROWS][COLS];
+	private boolean crossTurn = true; // true: cross moves first; false: circle moves
+	static boolean won = false;
+	//variables for the UI components
+	private DrawCanvas canvas; // the drawing canvas (JPanel) for the game board
+	private JLabel statusBar;  // the status bar at the bottom
+
+	public TicTacToeFrame() {
+		canvas = new DrawCanvas();  // Construct a drawing canvas
+		canvas.setPreferredSize(new Dimension(CANVAS_WIDTH, CANVAS_HEIGHT));
+		canvas.addMouseListener(new MouseAdapter() {
+			@Override
+			 // mouse click handler
+			public void mouseClicked(MouseEvent e) { 
+				int mouseX = e.getX();
+				int mouseY = e.getY();
+				// Get the row and column clicked by dividing x,y coordinates by the cell size
+				int rowSelected = mouseY / CELL_SIZE;
+				int colSelected = mouseX / CELL_SIZE;
+
+				if (cells[rowSelected][colSelected] == EMPTY) {  // empty cell
+					if (crossTurn) {
+						cells[rowSelected][colSelected] = CROSS;
+					} else {
+						cells[rowSelected][colSelected] = circle;
+					}
+					crossTurn = !crossTurn;  // switch turn
+				}
+
+				// Refresh the drawing canvas
+				if(!won)
+				repaint();
+
+				// Check game status
+				checkGameStatus();
+			}
+		});
+
+		// Setup the status bar to display status message
+		statusBar = new JLabel("  ");
+		statusBar.setFont(new Font(Font.DIALOG_INPUT, Font.BOLD, 15));
+		statusBar.setBorder(BorderFactory.createEmptyBorder(2, 5, 4, 5));
+
+		Container cp = getContentPane();
+		cp.setLayout(new BorderLayout());
+		cp.add(canvas, BorderLayout.CENTER);
+		cp.add(statusBar, BorderLayout.PAGE_END);
+
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		pack();  // pack all the components in this JFrame
+		setTitle("Tic Tac Toe");
+		setVisible(true);
+	}
+
+	// Check the game status and update the status bar message
+	private void checkGameStatus() {
+		// check for win
+		for (int row = 0; row < ROWS; ++row) {
+			if (cells[row][0] != EMPTY && cells[row][0] == cells[row][1] && cells[row][1] == cells[row][2]) {
+				// 3 cells are the same in a row
+				won = true;
+				break;
+			}
+		}
+		for (int col = 0; col < COLS; ++col) {
+			if (cells[0][col] != EMPTY && cells[0][col] == cells[1][col] && cells[1][col] == cells[2][col]) {
+				// 3 cells are the same in a column
+				won = true;
+				break;
+			}
+		}
+		if (cells[0][0] != EMPTY && cells[0][0] == cells[1][1] && cells[1][1] == cells[2][2]) {
+			// 3 cells are the same in the diagonal
+			won = true;
+		}
+		if (cells[0][2] != EMPTY && cells[0][2] == cells[1][1] && cells[1][1] == cells[2][0]) {
+			// 3 cells are the same in the opposite diagonal
+			won = true;
+		}
+
+		if (won) {
+			statusBar.setForeground(Color.BLUE);
+			if (crossTurn) {
+				statusBar.setText("'O' won! Click to play again.");
+			} else {
+				statusBar.setText("'X' won! Click to play again.");
+			}
+		} else {
+			// check for draw
+			boolean draw = true;
+			for (int row = 0; row < ROWS; ++row) {
+				for (int col = 0; col < COLS; ++col) {
+					if (cells[row][col] == EMPTY) {
+						draw = false;  // an empty cell found, not a draw
+						break;
+					}
+				}
+			}
+			if (draw) {
+				// game over with a draw
+				statusBar.setForeground(Color.RED);
+				statusBar.setText("It's a Draw!");
+			} else {
+				// game is still in progress
+				if (crossTurn) {
+					statusBar.setForeground(Color.BLACK);
+					statusBar.setText("'X's Turn");
+				} else {
+					statusBar.setForeground(Color.BLACK);
+					statusBar.setText("'O's Turn");
+				}
+			}
+		}
+	}
+	class DrawCanvas extends JPanel {
+
+
+		@Override
+		public void paintComponent(Graphics g) {
+			super.paintComponent(g);
+			setBackground(Color.WHITE); 
+
+			// Draw the game board
+			g.setColor(Color.LIGHT_GRAY);
+			for (int row = 1; row < ROWS; ++row) {
+				g.fillRoundRect(0, CELL_SIZE * row - GRID_WIDTH_HALF,
+						CANVAS_WIDTH-1, GRID_WIDTH, GRID_WIDTH, GRID_WIDTH);
+			}
+			for (int col = 1; col < COLS; ++col) {
+				g.fillRoundRect(CELL_SIZE * col - GRID_WIDTH_HALF, 0,
+						GRID_WIDTH, CANVAS_HEIGHT-1, GRID_WIDTH, GRID_WIDTH);
+			}
+
+			// Draw the X and O
+			Graphics2D g2d = (Graphics2D)g;
+			g2d.setStroke(new BasicStroke(10.0f));
+			for (int row = 0; row < ROWS; ++row) {
+				for (int col = 0; col < COLS; ++col) {
+					int x1 = col * CELL_SIZE + CELL_SIZE / 6;
+					int y1 = row * CELL_SIZE + CELL_SIZE / 6;
+					int x2 = (col + 1) * CELL_SIZE - CELL_SIZE / 6;
+					int y2 = (row + 1) * CELL_SIZE - CELL_SIZE / 6;
+					if (cells[row][col] == CROSS) {
+						g2d.setColor(Color.RED);
+						g2d.drawLine(x1, y1, x2, y2);
+						g2d.drawLine(x2, y1, x1, y2);
+					} else if (cells[row][col] == circle) {
+						g2d.setColor(Color.BLUE);
+						g2d.drawOval(x1, y1, CELL_SIZE-2*CELL_SIZE/6, CELL_SIZE-2*CELL_SIZE/6);
+					}
+				}
+			}
+		}
+	}
+
+	// The main method
+	public static void main(String[] args) {
+		// Run UI codes in the Event
+		SwingUtilities.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				new TicTacToeFrame(); // Let the constructor do the job
+			}
+		}
+				);
+	}
+}
+
+
